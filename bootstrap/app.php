@@ -1,8 +1,13 @@
 <?php
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,5 +21,39 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Как узнать какой exception
+//        $exceptions->render(function (Exception $e) {
+//            dd($e);
+//        });
+
+        $exceptions->render(function (AuthenticationException $e) {
+            return response()->json([
+                "code" => 401,
+                "message" => "Login failed",
+            ], 401);
+        });
+
+        $exceptions->render(function (NotFoundHttpException $e) {
+            return response()->json([
+                "message" => "Not found",
+                "code" => 404
+            ], 404);
+        });
+
+        $exceptions->render(function (AccessDeniedHttpException $exception) {
+            return response()->json([
+                "code" => 403,
+                "message" => "Forbidden for you",
+            ], 403);
+        });
+
+        $exceptions->render(function (ValidationException $e) {
+            return response()->json([
+                'error' => [
+                    'code' => 422,
+                    'message' => 'Validation error',
+                    'errors' => $e->validator->errors(),
+                ],
+            ], 422);
+        });
     })->create();
